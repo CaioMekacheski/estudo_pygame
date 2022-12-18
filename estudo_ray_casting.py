@@ -1,3 +1,5 @@
+#Atualizado 18/12/2022
+
 import pygame as pg
 from numba import njit
 from settings import *
@@ -24,12 +26,12 @@ def main():
     image_width = 360
     sky = pg.surfarray.array3d(pg.transform.scale
                                (pg.image.load('skybox2.jpg'), (image_width, halfvres * 2)))/255
-
+    escala_cor = 255
     # Carrega e armazena a imagem do chão em um array 3d
-    floor = pg.surfarray.array3d(pg.image.load('floor04.png'))/255
+    floor = pg.surfarray.array3d(pg.image.load('floor04.png'))/escala_cor
 
     # Carrega e armazena a imagem da parede em um array 3d
-    wall = pg.surfarray.array3d(pg.image.load('wall01.jpg'))/255
+    wall = pg.surfarray.array3d(pg.image.load('wall01.jpg'))/escala_cor
 
     while running:  # Enquanto running for true
 
@@ -38,8 +40,8 @@ def main():
             if event.type == pg.QUIT:   # Se o evento for QUIT
                 running = False     # encerra o jogo
 
-            if int(posx) == exitx and int(posy) == exity:   # Se o player encontrar a saída
-                print("Você encontrou a saída! Parabéns!!") # encerras o jogo
+            if int(posx) == exitx and int(posy) == exity:    # Se o player encontrar a saída
+                print("Você encontrou a saída! Parabéns!!")  # encerras o jogo
                 running = False
 
 
@@ -51,7 +53,7 @@ def main():
                           exitx, exity)
 
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
-        surf = pg.surfarray.make_surface(frame * 255)
+        surf = pg.surfarray.make_surface(frame * escala_cor)
         surf = pg.transform.scale(surf, RESOLUTION)
 
         # Imprime o fps e a posição x e y na borda superior da janela
@@ -71,6 +73,10 @@ def main():
 def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
 
     x, y, diag = posx, posy, rot
+
+    #Configura a rotação da camera conforme a posição do mouse
+    p_mouse = pg.mouse.get_rel()
+    rot = rot + np.clip((p_mouse[0]) / 200, -0.05, 0.05)
 
     if keys[pg.K_LEFT] or keys[ord('a')]:  # Rotaciona a camera para a direita
         rot -= PLAYER_ROT_SPEED * et
@@ -103,7 +109,6 @@ def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
 
 # Criação do mapa
 def gen_map(size):
-    
     mapc = np.random.uniform(0, 1, (size, size, 3))
     maph = np.random.choice([0, 0, 0, 0, 1, 1], (size, size))
     maph[0, :], maph[size - 1, :], maph[:, 0], maph[:, size - 1] = (1, 1, 1, 1)
@@ -209,15 +214,17 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, map
 
                 shade = shade * 0.5
 
-
+            # Preenche o frame considerando o sombreamento
             frame[i][halfvres * 2 - j - 1] = \
-                 shade * (floor[xx][yy] + frame[i][halfvres * 2 - j - 1]) / 2  # Preenche o frame considerando o sombreamento
+                shade * (floor[xx][yy] + frame[i][halfvres * 2 - j - 1]) / 2
 
+            # Cria a saída do labirinto
             if int(x) == exitx and int(y) == exity and (x % 1 - 0.5) ** 2 + (y % 1 - 0.5) ** 2 < 0.2:
                 ee = j / (10 * halfvres)
                 frame[i][j:2 * halfvres - j] = (ee * np.ones(3) + frame[i][j:2 * halfvres - j]) / (1 + ee)
 
     return frame
+
 
 if __name__ == '__main__':
     main()
