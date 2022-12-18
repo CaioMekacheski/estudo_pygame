@@ -1,6 +1,3 @@
-# Atualizado 17/12/2022
-# Encontre a saída do labirinto 
-
 import pygame as pg
 from numba import njit
 from settings import *
@@ -106,12 +103,13 @@ def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
 
 # Criação do mapa
 def gen_map(size):
+    
     mapc = np.random.uniform(0, 1, (size, size, 3))
     maph = np.random.choice([0, 0, 0, 0, 1, 1], (size, size))
     maph[0, :], maph[size - 1, :], maph[:, 0], maph[:, size - 1] = (1, 1, 1, 1)
 
     # Define as coordendas
-    posx, posy, rot = 1.5, np.random.randint(1, size - 1) + .5, np.pi / 4
+    posx, posy, rot = PLAYER_POSX, PLAYER_POSY + .5, PLAYER_ANGLE
     x, y = int(posx), int(posy)
     maph[x][y] = 0
     count = 0
