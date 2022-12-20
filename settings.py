@@ -1,4 +1,4 @@
-# Atualizado em 17/12/2022
+# Atualizado em 20/12/2022
 
 import math
 import numpy as np
@@ -9,6 +9,8 @@ HALF_HEIGHT = HEIGHT // 2
 HOR_RES = 160
 HALF_VER_RES = 120
 MOD = HOR_RES / 60
+
+WALL_WIDTH = 255
 
 PLAYER_POSX = 1.5
 PLAYER_POSY = np.random.randint(1, SIZE - 1)
