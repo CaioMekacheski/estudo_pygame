@@ -1,4 +1,4 @@
-#Atualizado 18/12/2022
+# Atualizado 20/12/2022
 
 import pygame as pg
 from numba import njit
@@ -7,9 +7,12 @@ from settings import *
 
 def main():
     pg.init()
-    screen = pg.display.set_mode(RESOLUTION)
+    screen = pg.display.set_mode(RES)
     running = True
     clock = pg.time.Clock()
+
+    pg.mouse.set_visible(False)  # Poteiro do mouse invisível
+    pg.event.set_grab(1)  #
 
     hres = HOR_RES  # Resolução horizontal
     halfvres = HALF_VER_RES  # Resolução vertical / 2
@@ -24,20 +27,22 @@ def main():
 
     # Carrega e armazena a imagem do céu em um array 3d
     image_width = 360
-    sky = pg.surfarray.array3d(pg.transform.scale
-                               (pg.image.load('skybox2.jpg'), (image_width, halfvres * 2)))/255
     escala_cor = 255
+    sky = pg.surfarray.array3d(pg.transform.scale
+                               (pg.image.load('skybox2.jpg'),
+                                (image_width, halfvres * 2))) / escala_cor
+
     # Carrega e armazena a imagem do chão em um array 3d
-    floor = pg.surfarray.array3d(pg.image.load('floor04.png'))/escala_cor
+    floor = pg.surfarray.array3d(pg.image.load('floor04.png')) / escala_cor
 
     # Carrega e armazena a imagem da parede em um array 3d
-    wall = pg.surfarray.array3d(pg.image.load('wall01.jpg'))/escala_cor
+    wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
     while running:  # Enquanto running for true
 
         for event in pg.event.get():    # Checa eventos
 
-            if event.type == pg.QUIT:   # Se o evento for QUIT
+            if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                 running = False     # encerra o jogo
 
             if int(posx) == exitx and int(posy) == exity:    # Se o player encontrar a saída
@@ -49,12 +54,12 @@ def main():
         frame = new_frame(posx, posy, rot,
                           frame, sky, floor,
                           hres, halfvres, mod,
-                          maph, mapc, size, wall,
-                          exitx, exity)
+                          maph, mapc, size,
+                          wall, exitx, exity)
 
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
         surf = pg.surfarray.make_surface(frame * escala_cor)
-        surf = pg.transform.scale(surf, RESOLUTION)
+        surf = pg.transform.scale(surf, RES)
 
         # Imprime o fps e a posição x e y na borda superior da janela
         fps = int(clock.get_fps())
@@ -72,17 +77,20 @@ def main():
 # Movimento do player
 def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
 
+    # Define as coordenadas x e y
     x, y, diag = posx, posy, rot
 
     #Configura a rotação da camera conforme a posição do mouse
     p_mouse = pg.mouse.get_rel()
-    rot = rot + np.clip((p_mouse[0]) / 200, -0.05, 0.05)
+    rot = rot + np.clip((p_mouse[0]) / 200, -0.2, 0.2)
 
-    if keys[pg.K_LEFT] or keys[ord('a')]:  # Rotaciona a camera para a direita
-        rot -= PLAYER_ROT_SPEED * et
+    if keys[pg.K_LEFT] or keys[ord('a')]:  # Move para direita
+        x, y = posx + np.sin(rot) * PLAYER_SPEED * et, \
+               posy - np.cos(rot) * PLAYER_SPEED * et
 
-    if keys[pg.K_RIGHT] or keys[ord('d')]:  # Rotaciona a camera para a esquerda
-        rot += PLAYER_ROT_SPEED * et
+    if keys[pg.K_RIGHT] or keys[ord('d')]:  # Move para esquerda
+        x, y = posx - np.sin(rot) * PLAYER_SPEED * et, \
+               posy + np.cos(rot) * PLAYER_SPEED * et
 
     if keys[pg.K_UP] or keys[ord('w')]:     # Move para frente
         x, y, diag = posx + np.cos(rot) * PLAYER_SPEED * et, \
@@ -143,7 +151,11 @@ def gen_map(size):
 
 # Criação do frame
 @njit()
-def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, mapc, size, wall, exitx, exity):
+def new_frame(posx, posy, rot,
+              frame, sky, floor,
+              hres, halfvres, mod,
+              maph, mapc, size,
+              wall, exitx, exity):
 
     for i in range(hres):  # Percorre todas as colunas da tela
 
@@ -155,6 +167,7 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, map
         # Preenche o frame com a imagem do céu
         frame[i][:] = sky[int(np.rad2deg(rot_i) % 359)][:]
 
+        # Define as coordenadas x e y
         x, y = posx, posy
 
         # Verifica se há paredes e calcula a distância
@@ -164,22 +177,22 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, map
         n = abs((x - posx) / cos)
         h = int(halfvres / (n * cos2 + 0.001))
 
-        xx = int(x * 3 % 1 * 254)
+        xx = int(x * 3 % 1 * WALL_WIDTH - 1)
 
-        if x % 1 < 0.02 or x % 1 > 2.53:
-            xx = int(y * 3 % 1 * 254)
+        if x % 1 < 0.02 or x % 1 > 0.98:
+            xx = int(y * 3 % 1 * WALL_WIDTH - 1)
 
-        yy = np.linspace(0, 762, h * 2) % 254
+        yy = np.linspace(0, 3, h * 2) * (WALL_WIDTH - 1) % (WALL_WIDTH - 1)
         shade = 0.3 + 0.7 * (h / halfvres)  # Define o sombreamento da parede
 
-        if shade > 1:
+        if shade > 1:   # Limita o sombreamento
             shade = 1
 
+        # Verifica se há sombra em paredes perpendiculares
         ash = 0
 
         if maph[int(x - 0.33) % (size - 1)][int(y - 0.33) % (size - 1)]:
             ash = 1
-
 
         if maph[int(x - 0.01) % (size - 1)][int(y - 0.01) % (size - 1)]:
             shade, ash = shade * 0.5, 0
@@ -190,7 +203,7 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, map
 
             if halfvres - h + k >= 0 and halfvres - h + k < 2 * halfvres:
 
-                if ash and 1 - k / (2 * h) < 1 - xx / 225:
+                if ash and 1 - k / (2 * h) < 1 - xx / WALL_WIDTH:
                     c, ash = 0.5 * c, 0
 
                 frame[i][halfvres - h + k] = c * wall[xx][int(yy[k])]
@@ -209,19 +222,24 @@ def new_frame(posx, posy, rot, frame, sky, floor, hres, halfvres, mod, maph, map
             if maph[int(x - 0.33) % (size - 1)][int(y - 0.33) % (size - 1)]:
                 shade = shade * 0.5
 
-            elif maph[int(x - 0.33) % (size - 1)][int(y) % (size - 1)] \
-                    or maph[int(x) % (size - 1)][int(y - 0.33) % (size - 1)]:
+            elif ((maph[int(x - 0.33) % (size - 1)][int(y) % (size - 1)] and y % 1 > x % 1) or
+                  (maph[int(x) % (size - 1)][int(y - 0.33) % (size - 1)] and x % 1 > y % 1)):
 
                 shade = shade * 0.5
 
-            # Preenche o frame considerando o sombreamento
+            # Preenche o frame considerando o sombreamento e o reflexo
             frame[i][halfvres * 2 - j - 1] = \
                 shade * (floor[xx][yy] + frame[i][halfvres * 2 - j - 1]) / 2
 
+            # frame[i][halfvres * 2 - j - 1] = shade * floor[xx][yy]
+
             # Cria a saída do labirinto
-            if int(x) == exitx and int(y) == exity and (x % 1 - 0.5) ** 2 + (y % 1 - 0.5) ** 2 < 0.2:
+            if int(x) == exitx and int(y) == exity \
+                    and (x % 1 - 0.5) ** 2 + (y % 1 - 0.5) ** 2 < 0.2:
+
                 ee = j / (10 * halfvres)
-                frame[i][j:2 * halfvres - j] = (ee * np.ones(3) + frame[i][j:2 * halfvres - j]) / (1 + ee)
+                frame[i][j:2 * halfvres - j] = \
+                    (ee * np.ones(3) + frame[i][j:2 * halfvres - j]) / (1 + ee)
 
     return frame
 
