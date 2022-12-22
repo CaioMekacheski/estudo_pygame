@@ -1,3 +1,5 @@
+# Atualizado 22/12/2022
+
 import pygame as pg
 import numpy as np
 from numba import njit
