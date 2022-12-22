@@ -1,4 +1,4 @@
-# Atualizado 22/12/2022
+# atualizado 22/12/2022
 
 import pygame as pg
 from numba import njit
@@ -38,9 +38,15 @@ def main():
     # Carrega e armazena a imagem da parede em um array 3d
     wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
+    # Carrega e a sprite do inimigo
     sprite = pg.image.load('spr_test01.png')
+
+    # Define o tamanho da sprite
     sprsize = np.asarray(sprite.get_size())
-    enemies = np.random.uniform(0, size-2, (100, 4))
+
+    # Gera os inimigos no mapa
+    enemy_num = 25
+    enemies = np.random.uniform(0, size-2, (enemy_num, 4))
 
     while running:  # Enquanto running for true
 
@@ -50,7 +56,7 @@ def main():
                 running = False     # encerra o jogo
 
             if int(posx) == exitx and int(posy) == exity:    # Se o player encontrar a saída
-                print("Você encontrou a saída! Parabéns!!")  # encerras o jogo
+                print("Você encontrou a saída! Parabéns!!")  # encerra o jogo
                 running = False
 
 
@@ -66,7 +72,7 @@ def main():
         surf = pg.transform.scale(surf, RES)
 
         # Enemies
-        for en in range(100):
+        for en in range(enemy_num):
 
             enx, eny = enemies[en][0], enemies[en][1]
             angle = np.arctan((eny - posy) / (enx - posx))  # Calcula o ângulo entre a posição do
@@ -97,9 +103,11 @@ def main():
             else:
                 enemies[en][3] = 999
 
-        enemies = enemies[enemies[:, 3].argsort()]
+        # Posiciona os inimigos no mapa a uma distância mínima do player
+        if enemies[en][3] > 1:
+            enemies = enemies[enemies[:, 3].argsort()]
 
-        for en in range(100):
+        for en in range(enemy_num):
 
             if enemies[en][3] > 10:
                 break
@@ -109,10 +117,8 @@ def main():
             vert = 300 + 300 * scaling - scaling * sprsize[1] / 2
             hor = 400 - 800 * np.sin(enemies[en][2]) - sprsize[0] / 2
             sprsurf = pg.transform.scale(sprite, scaling * sprsize * 50)  # Prepara para imprimir
-                                                                              # na tela
+                                                                          # na tela
             surf.blit(sprsurf, (hor, vert))  # Imprime na tela
-
-
 
         # Imprime o fps e a posição x e y na borda superior da janela
         fps = int(clock.get_fps())
