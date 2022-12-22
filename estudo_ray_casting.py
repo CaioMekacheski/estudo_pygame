@@ -1,4 +1,4 @@
-# Atualizado 20/12/2022
+# Atualizado 22/12/2022
 
 import pygame as pg
 from numba import njit
@@ -38,6 +38,10 @@ def main():
     # Carrega e armazena a imagem da parede em um array 3d
     wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
+    sprite = pg.image.load('spr_test01.png')
+    sprsize = np.asarray(sprite.get_size())
+    enemies = np.random.uniform(0, size-2, (100, 4))
+
     while running:  # Enquanto running for true
 
         for event in pg.event.get():    # Checa eventos
@@ -60,6 +64,55 @@ def main():
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
         surf = pg.surfarray.make_surface(frame * escala_cor)
         surf = pg.transform.scale(surf, RES)
+
+        # Enemies
+        for en in range(100):
+
+            enx, eny = enemies[en][0], enemies[en][1]
+            angle = np.arctan((eny - posy) / (enx - posx))  # Calcula o ângulo entre a posição do
+                                                            # player e da sprite
+            if abs(posx + np.cos(angle) - enx) > abs(posx - enx):  # Checa se a sprite está no
+                                                                  # campo de visão do player
+                angle = (angle - np.pi) % (2 * np.pi)
+
+            anglediff = (rot - angle) % (2 * np.pi)
+
+            if anglediff > 11 * np.pi / 6 or anglediff < np.pi / 6:  # Se a sprite estiver no campo
+
+                dist = np.sqrt((posx - enx) ** 2 + (posy - eny) ** 2)  # Define a distância
+                enemies[en][2], enemies[en][3] = anglediff, .05 / dist
+
+                x, y = enx, eny
+                cos, sin = 0.01 * (posx - enx) / dist, 0.01 * (posy - eny) / dist
+
+                for i in range(int(dist / 0.01)):
+
+                    x, y = x + cos, y + sin
+
+                    if maph[int(x)][int(y)]:
+
+                        enemies[en][3] = 999
+
+
+            else:
+                enemies[en][3] = 999
+
+        enemies = enemies[enemies[:, 3].argsort()]
+
+        for en in range(100):
+
+            if enemies[en][3] > 10:
+                break
+
+            cos2 = np.cos(enemies[en][2])  # Corrige o efeito 'olho de peixe'
+            scaling = min(enemies[en][3], 2) / cos2  # Define a escala da sprite
+            vert = 300 + 300 * scaling - scaling * sprsize[1] / 2
+            hor = 400 - 800 * np.sin(enemies[en][2]) - sprsize[0] / 2
+            sprsurf = pg.transform.scale(sprite, scaling * sprsize * 50)  # Prepara para imprimir
+                                                                              # na tela
+            surf.blit(sprsurf, (hor, vert))  # Imprime na tela
+
+
 
         # Imprime o fps e a posição x e y na borda superior da janela
         fps = int(clock.get_fps())
