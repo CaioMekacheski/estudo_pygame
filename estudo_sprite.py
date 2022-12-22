@@ -1,7 +1,6 @@
 import pygame as pg
 import numpy as np
 from numba import njit
-#continuar: 03:32 https://www.youtube.com/watch?v=zdNPYSs-FLU&ab_channel=FinFETptBR
 
 def main():
     pg.init()
@@ -20,9 +19,8 @@ def main():
     floor = pg.surfarray.array3d(pg.image.load('floor04.png')) / 255
     sprite = pg.image.load('spr_test01.png')
     sprsize = np.asarray(sprite.get_size())
-    p_mouse = pg.mouse.get_pos()
+    enemies = np.random.uniform(0, 50, (100, 4))
 
-    enx, eny = 5, 5
 
     while running:
         for event in pg.event.get():
@@ -34,21 +32,48 @@ def main():
         surf = pg.surfarray.make_surface(frame * 255)
         surf = pg.transform.scale(surf, (800, 600))
 
-        angle = np.arctan((eny - posy) / (enx - posx))
+        #p_mouse = pg.mouse.get_pos()  # Posição do mouse
 
-        if abs(posx + np.cos(angle) - enx) > abs(posx -enx):
-            angle = (angle - np.pi) % (2 * np.pi)
+        #scaling = sprsize * abs((p_mouse[1] - 300) / 300) * 10  #Define o tamanho
+                                                                 # conforme a distância
+        #sprsurf = pg.transform.scale(sprite, scaling)  # Prepara para imprimir na tela
 
-        anglediff = (rot - angle) % (2 * np.pi)
+        #surf.blit(sprsurf, p_mouse - scaling / 2)  # Imprime na tela
 
-        if anglediff > 11 * np.pi / 6 or anglediff < np.pi / 6:
-            dist = np.sqrt((posx - enx) ** 2 + (posy - eny) ** 2)
-            cos2 = np.cos(anglediff)
-            scaling = min(1 / dist, 2) / cos2
+        for en in range(100):
+
+            enx, eny = enemies[en][0], enemies[en][1]
+            angle = np.arctan((eny - posy) / (enx - posx))  # Calcula o ângulo entre a posição do
+                                                            # player e da sprite
+            if abs(posx + np.cos(angle) - enx) > abs(posx - enx):  # Checa se a sprite está no
+                                                                  # campo de visão do player
+                angle = (angle - np.pi) % (2 * np.pi)
+
+            anglediff = (rot - angle) % (2 * np.pi)
+
+            if anglediff > 11 * np.pi / 6 or anglediff < np.pi / 6:  # Se a sprite estiver no campo
+                dist = np.sqrt((posx - enx) ** 2 + (posy - eny) ** 2)  # Define a distância
+                enemies[en][2], enemies[en][3] = anglediff, 1 / dist
+
+            else:
+                enemies[en][3] = 999
+
+        enemies = enemies[enemies[:, 3].argsort()]
+
+        for en in range(100):
+
+            if enemies[en][3] > 10:
+                break
+
+            cos2 = np.cos(enemies[en][2])  # Corrige o efeito 'olho de peixe'
+            scaling = min(enemies[en][3], 2) / cos2  # Define a escala da sprite
             vert = 300 + 300 * scaling - scaling * sprsize[1] / 2
-            hor = 400 - 800 * np.sin(anglediff) - sprsize[0] / 2
-            sprsurf = pg.transform.scale(sprite, scaling * sprsize)
-            surf.blit(sprsurf, (hor, vert))
+            hor = 400 - 800 * np.sin(enemies[en][2]) - sprsize[0] / 2
+            sprsurf = pg.transform.scale(sprite, scaling * sprsize * 30)  # Prepara para imprimir
+                                                                              # na tela
+            surf.blit(sprsurf, (hor, vert))  # Imprime na tela
+
+
 
         fps = int(clock.get_fps())
         pg.display.set_caption("Pycasting maze - FPS: " + str(fps))
