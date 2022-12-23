@@ -1,4 +1,5 @@
-import numpy as np
+# Atualizado 23/12/2022
+
 import pygame as pg
 from numba import njit
 from settings import *
