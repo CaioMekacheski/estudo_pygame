@@ -1,4 +1,4 @@
-# Atualizado 22/12/2022
+# Atualizado 23/12/2022
 
 import pygame as pg
 import numpy as np
