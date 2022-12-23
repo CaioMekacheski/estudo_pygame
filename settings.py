@@ -1,4 +1,4 @@
-# Atualizado em 20/12/2022
+# Atualizado em 23/12/2022
 
 import math
 import numpy as np
@@ -6,8 +6,8 @@ import numpy as np
 RES = WIDTH, HEIGHT = 800, 600
 HALF_WIDTH = WIDTH // 2
 HALF_HEIGHT = HEIGHT // 2
-HOR_RES = 160
-HALF_VER_RES = 120
+HOR_RES = 250
+HALF_VER_RES = int(HOR_RES * 0.375)
 MOD = HOR_RES / 60
 
 WALL_WIDTH = 255
