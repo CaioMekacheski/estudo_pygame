@@ -1,4 +1,4 @@
-# Atualizado 23/12/2022
+# Atualizado 28/12/2022 - 04:22
 
 import pygame as pg
 from numba import njit
@@ -48,6 +48,7 @@ def main():
     while running:  # Enquanto running for true
 
         ticks = pg.time.get_ticks() / 200
+        er = clock.tick() / 25
 
         for event in pg.event.get():    # Checa eventos
 
@@ -69,7 +70,8 @@ def main():
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
         surf = pg.surfarray.make_surface(frame * escala_cor)
 
-        enemies = sort_sprites(posx, posy, rot, enemies, maph, size)
+        # Cria os inimigos
+        enemies = sort_sprites(posx, posy, rot, enemies, maph, size, er / 5)
         surf, en = draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks)
 
         surf = pg.transform.scale(surf, RES)
@@ -148,7 +150,7 @@ def gen_map(size):
         else:
             testy = testy + np.random.choice([-1, 1])
 
-        if testx > 0 and testx < size - 1 and testy > 0 and testy < size - 1:
+        if 0 < testx < size - 1 and 0 < testy < size - 1:
 
             if maph[testx][testy] == 0 or count > 5:
                 count = 0
@@ -257,17 +259,33 @@ def new_frame(posx, posy, rot,
 
     return frame
 
-
+# Define aleatoriamente os tipos e as posições dos inimigos
 @njit()
-def sort_sprites(posx, posy, rot, enemies, maph, size):
+def sort_sprites(posx, posy, rot, enemies, maph, size, er):
 
     for en in range(len(enemies)):
 
-        enx, eny = enemies[en][0], enemies[en][1]  # Define as coordenadas x e y
+        # Movimentação
+        cos, sin = er * np.cos(enemies[en][6]), er * np.sin(enemies[en][6])
+
+        enx, eny = enemies[en][0] + cos, enemies[en][1] + sin  # Define as coordenadas x e y
+
+        if (maph[int(enx - 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
+            maph[int(enx - 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)] or
+            maph[int(enx + 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
+            maph[int(enx + 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)]):
+
+            enx, eny = enemies[en][0], enemies[en][1]
+            enemies[en][6] = enemies[en][6] + np.random.uniform(0.5, 0.5)
+
+        else:
+
+            enemies[en][0], enemies[en][1] = enx, eny
+
         angle = np.arctan((eny - posy) / (enx - posx))  # Calcula o ângulo entre a posição do
                                                         # player e da sprite
         if abs(posx + np.cos(angle) - enx) > abs(posx - enx):  # Checa se a sprite está no
-            # campo de visão do player
+                                                               # campo de visão do player
             angle = (angle - np.pi) % (2 * np.pi)
 
 
@@ -275,7 +293,8 @@ def sort_sprites(posx, posy, rot, enemies, maph, size):
 
         if angle2 > 10.5 * np.pi / 6 or angle2 < 1.5 * np.pi / 6:  # Se a sprite estiver no campo
 
-            dir2p = ((enemies[en][6] - angle - 3 * np.pi / 4) % (2 * np.pi)) / (np.pi / 2)  # Define a distância
+            # Define a distância, o ângulo, o seno, o cosseno, e as coordenadas x e y
+            dir2p = ((enemies[en][6] - angle - 3 * np.pi / 4) % (2 * np.pi)) / (np.pi / 2)
             enemies[en][2] = angle2
             enemies[en][7] = dir2p
             enemies[en][3] = 1 / np.sqrt((enx - posx) ** 2 + (eny - posy) ** 2 + 1e-16)
@@ -287,6 +306,7 @@ def sort_sprites(posx, posy, rot, enemies, maph, size):
 
                 x, y = x + 0.05 * cos, y + 0.05 * sin
 
+                # Checa se o inimigo esta dentro do mapa
                 if (maph[int(x - 0.2 * cos) % (size - 1)][int(y) % (size - 1)] or
                     maph[int(x) % (size - 1)][int(y - 0.2 * sin) % (size - 1)]):
 
@@ -299,7 +319,7 @@ def sort_sprites(posx, posy, rot, enemies, maph, size):
 
     return enemies
 
-
+# Gera os inimigos no mapa
 def spawn_enemies(number, maph, msize):
 
     enemies = []
@@ -307,12 +327,17 @@ def spawn_enemies(number, maph, msize):
     for i in range(number):
 
         x, y = np.random.uniform(1, msize-2), np.random.uniform(1, msize-2)
+
+        # Checa se esta no mapa
         while (maph[int(x - 0.1) % (msize - 1)][int(y - 0.1) % (msize - 1)] or
                maph[int(x - 0.1) % (msize - 1)][int(y + 0.1) % (msize - 1)] or
                maph[int(x + 0.1) % (msize - 1)][int(y - 0.1) % (msize - 1)] or
                maph[int(x + 0.1) % (msize - 1)][int(y + 0.1) % (msize - 1)]):
+
+            # Se estiver define as coordenadas x e y
             x, y = np.random.uniform(1, msize -1), np.random.uniform(1, msize -1)
 
+        # Define o angulo, a distância, a direção, o tipo, e o tamanho
         angle2p, invdist2p, dir2p = 0, 0, 0
         entype = np.random.choice([0, 1])
         direction = np.random.uniform(0, 2 * np.pi)
@@ -321,7 +346,7 @@ def spawn_enemies(number, maph, msize):
 
     return np.asarray(enemies)
 
-
+#Carrega as sprites e a organiza em uma lista
 def get_sprites(hres):
     sheet = pg.image.load('zombie_n_skeleton.png').convert_alpha()
     sprites = [[], []]
@@ -341,7 +366,7 @@ def get_sprites(hres):
 
     return sprites, sprsize
 
-
+# Configura e desenha as sprites
 def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks):
 
     cycle = int(ticks) % 3
@@ -362,7 +387,7 @@ def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks):
 
     return surf, en - 1
 
-  
+
 if __name__ == '__main__':
     main()
     pg.quit()
