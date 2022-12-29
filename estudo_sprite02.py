@@ -1,4 +1,4 @@
-# Atualizado 28/12/2022 - 04:22
+# Atualizado 29/12/2022 - 01:23
 
 import pygame as pg
 from numba import njit
@@ -39,7 +39,7 @@ def main():
     wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
     # Carrega e a sprite do inimigo e define o tamanho da sprite
-    sprites, sprsize = get_sprites(hres)
+    sprites, sprsize, sword, sword_spr = get_sprites(hres)
 
     # Gera os inimigos no mapa
     enemy_num = 50
@@ -51,12 +51,20 @@ def main():
         er = clock.tick() / 25
 
         for event in pg.event.get():    # Checa eventos
-
+            # Encerra o jogo
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
-                running = False     # encerra o jogo
 
-            if int(posx) == exitx and int(posy) == exity:    # Se o player encontrar a saída
-                print("Você encontrou a saída! Parabéns!!")  # encerra o jogo
+                running = False
+
+            # Movimenta a espada
+            if sword_spr < 1 and event.type == pg.MOUSEBUTTONDOWN:
+
+                sword_spr = 1
+
+            # Se o player encontrar a saída encerra o jogo
+            if int(posx) == exitx and int(posy) == exity:
+
+                print("Você encontrou a saída! Parabéns!!")
                 running = False
 
 
@@ -70,24 +78,34 @@ def main():
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
         surf = pg.surfarray.make_surface(frame * escala_cor)
 
-        # Cria os inimigos
+        # Cria e desenha, os inimigos e a espada
         enemies = sort_sprites(posx, posy, rot, enemies, maph, size, er / 5)
-        surf, en = draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks)
+        surf, en = draw_sprites(surf, sprites, enemies, sprsize,
+                                hres, halfvres, ticks, sword, sword_spr)
 
         surf = pg.transform.scale(surf, RES)
 
-        # Imprime o fps e a posição x e y na borda superior da janela
+        # Imprime o fps, a posição x e y e a rotação na borda superior da janela
         fps = int(clock.get_fps())
         pg.display.set_caption(" FPS: " + str(fps) +
                                " X: " + str(int(posx)) +
                                " Y: " + str(int(posy)) +
-                               " Rotação: " + str(int(rot)))
+                               " Rotação: " + str(int(rot)) +
+                               "   Inimigos: " + str(int(enemy_num)))
+        # Retorna a espada para posição inicial
+        if int(sword_spr) > 0:
+
+            if sword_spr == 1 and 1 < enemies[en][3] < 10:
+
+                enemies[en][0] = 0
+                enemy_num -= 1
+
+            sword_spr = (sword_spr + er * 5) % 4
 
         # Define as cordenadas x e y e a rotação do player
         posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
         screen.blit(surf, (0, 0))
         pg.display.update()
-        #posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
 
 # Movimento do player
 def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
@@ -265,29 +283,29 @@ def sort_sprites(posx, posy, rot, enemies, maph, size, er):
 
     for en in range(len(enemies)):
 
-        # Movimentação
+        # Movimentação dos inimigos
         cos, sin = er * np.cos(enemies[en][6]), er * np.sin(enemies[en][6])
-
-        enx, eny = enemies[en][0] + cos, enemies[en][1] + sin  # Define as coordenadas x e y
-
+        # Define as coordenadas x e y
+        enx, eny = enemies[en][0] + cos, enemies[en][1] + sin
+        # Checa a posição do inimigo no mapa
         if (maph[int(enx - 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
             maph[int(enx - 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)] or
             maph[int(enx + 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
             maph[int(enx + 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)]):
-
+            # Se estiver visivel, se move de forma aleatória
             enx, eny = enemies[en][0], enemies[en][1]
             enemies[en][6] = enemies[en][6] + np.random.uniform(0.5, 0.5)
 
         else:
-
+            # Senão, permanece parado
             enemies[en][0], enemies[en][1] = enx, eny
 
-        angle = np.arctan((eny - posy) / (enx - posx))  # Calcula o ângulo entre a posição do
-                                                        # player e da sprite
-        if abs(posx + np.cos(angle) - enx) > abs(posx - enx):  # Checa se a sprite está no
-                                                               # campo de visão do player
-            angle = (angle - np.pi) % (2 * np.pi)
+        # Calcula o ângulo entre a posição do player e da sprite
+        angle = np.arctan((eny - posy) / (enx - posx))
+        # Checa se a sprite está no campo de visão do player
+        if abs(posx + np.cos(angle) - enx) > abs(posx - enx):
 
+            angle = (angle - np.pi) % (2 * np.pi)
 
         angle2 = (rot - angle) % (2 * np.pi)
 
@@ -351,7 +369,13 @@ def get_sprites(hres):
     sheet = pg.image.load('zombie_n_skeleton.png').convert_alpha()
     sprites = [[], []]
 
+    swordsheet = pg.image.load('sword1.png').convert_alpha()
+    sword = []
+
     for i in range(3):
+
+        subsword = pg.Surface.subsurface(swordsheet, (i * 800, 0, 800, 600))
+        sword.append(pg.transform.smoothscale(subsword, (hres, int(hres * 0.75))))
 
         xx = i * 32
         sprites[0].append([])
@@ -364,10 +388,13 @@ def get_sprites(hres):
 
     sprsize = np.asarray(sprites[0][1][0].get_size()) * hres / 800
 
-    return sprites, sprsize
+    sword.append(sword[1])
+    sword_spr = 0
+
+    return sprites, sprsize, sword, sword_spr
 
 # Configura e desenha as sprites
-def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks):
+def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks, sword, sword_spr):
 
     cycle = int(ticks) % 3
 
@@ -384,6 +411,11 @@ def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks):
         hor = hres / 2 - hres * np.sin(enemies[en][2])
         spsurf = pg.transform.scale(sprites[types][cycle][dir2p], scale)
         surf.blit(spsurf, (hor, vert) - scale / 2)
+
+    sword_pos = 0, 0
+    surf.blit(sword[int(sword_spr)], sword_pos)
+
+
 
     return surf, en - 1
 
