@@ -1,4 +1,4 @@
-# Atualizado 29/12/2022 - 01:23
+# Atualizado 29/12/2022 - 23:52
 
 import pygame as pg
 from numba import njit
@@ -85,13 +85,15 @@ def main():
 
         surf = pg.transform.scale(surf, RES)
 
-        # Imprime o fps, a posição x e y e a rotação na borda superior da janela
+        # Imprime o fps, a posição x e y, a rotação na borda superior da janela e quantidade
+        # de inimigos restante
         fps = int(clock.get_fps())
         pg.display.set_caption(" FPS: " + str(fps) +
                                " X: " + str(int(posx)) +
                                " Y: " + str(int(posy)) +
                                " Rotação: " + str(int(rot)) +
                                "   Inimigos: " + str(int(enemy_num)))
+
         # Retorna a espada para posição inicial
         if int(sword_spr) > 0:
 
@@ -287,17 +289,17 @@ def sort_sprites(posx, posy, rot, enemies, maph, size, er):
         cos, sin = er * np.cos(enemies[en][6]), er * np.sin(enemies[en][6])
         # Define as coordenadas x e y
         enx, eny = enemies[en][0] + cos, enemies[en][1] + sin
-        # Checa a posição do inimigo no mapa
-        if (maph[int(enx - 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
-            maph[int(enx - 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)] or
-            maph[int(enx + 0.1) % (size - 1)][int(eny - 0.1) % (size - 1)] or
-            maph[int(enx + 0.1) % (size - 1)][int(eny + 0.1) % (size - 1)]):
-            # Se estiver visivel, se move de forma aleatória
+        # Checa se há uma parede no caminho
+        if (maph[int(enx - 0.2) % (size - 1)][int(eny - 0.2) % (size - 1)] or
+            maph[int(enx - 0.2) % (size - 1)][int(eny + 0.2) % (size - 1)] or
+            maph[int(enx + 0.2) % (size - 1)][int(eny - 0.2) % (size - 1)] or
+            maph[int(enx + 0.2) % (size - 1)][int(eny + 0.2) % (size - 1)]):
+            # Se for o caso, muda a direção de forma aleatória
             enx, eny = enemies[en][0], enemies[en][1]
             enemies[en][6] = enemies[en][6] + np.random.uniform(0.5, 0.5)
 
         else:
-            # Senão, permanece parado
+            # Senão continua na mesma direção
             enemies[en][0], enemies[en][1] = enx, eny
 
         # Calcula o ângulo entre a posição do player e da sprite
@@ -366,12 +368,16 @@ def spawn_enemies(number, maph, msize):
 
 #Carrega as sprites e a organiza em uma lista
 def get_sprites(hres):
+
+    # Carrega a imagem da espada e dos inimigos
+    # e cria as listas que irão receber essas imagens
     sheet = pg.image.load('zombie_n_skeleton.png').convert_alpha()
     sprites = [[], []]
 
     swordsheet = pg.image.load('sword1.png').convert_alpha()
     sword = []
 
+    # Armazena as imagens em suas respectivas listas
     for i in range(3):
 
         subsword = pg.Surface.subsurface(swordsheet, (i * 800, 0, 800, 600))
