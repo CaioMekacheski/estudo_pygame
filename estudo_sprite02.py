@@ -1,4 +1,4 @@
-# Atualizado 29/12/2022 - 23:52
+# Atualizado 30/12/2022 - 02:55
 
 import pygame as pg
 from numba import njit
@@ -12,7 +12,7 @@ def main():
     clock = pg.time.Clock()
 
     pg.mouse.set_visible(False)  # Poteiro do mouse invisível
-    pg.event.set_grab(1)  #
+    pg.event.set_grab(1)  # O mouse não sai da janela
 
     hres = HOR_RES  # Resolução horizontal
     halfvres = HALF_VER_RES  # Resolução vertical / 2
@@ -32,26 +32,44 @@ def main():
                                (pg.image.load('skybox2.jpg'),
                                 (image_width * 2, halfvres * 2))) / escala_cor
 
-    # Carrega e armazena a imagem do chão em um array 3d
+    # Carrega e armazena a imagem do chão, da parede em um array 3d
     floor = pg.surfarray.array3d(pg.image.load('floor04.png')) / escala_cor
 
-    # Carrega e armazena a imagem da parede em um array 3d
     wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
     # Carrega e a sprite do inimigo e define o tamanho da sprite
     sprites, sprsize, sword, sword_spr = get_sprites(hres)
 
     # Gera os inimigos no mapa
-    enemy_num = 50
+    enemy_num = 10
     enemies = spawn_enemies(enemy_num, maph, size)
 
     while running:  # Enquanto running for true
 
         ticks = pg.time.get_ticks() / 200
         er = clock.tick() / 25
+        
+        # Se o player encontrar a saída encerra o jogo
+        if int(posx) == exitx and int(posy) == exity and enemy_num <= 1:
 
-        for event in pg.event.get():    # Checa eventos
-            # Encerra o jogo
+            print("Você encontrou a saída! Parabéns!!")
+            running = False
+
+        elif int(posx) == exitx and int(posy) == exity and enemy_num > 0:
+            pg.display.set_caption(' Ainda há inimigos! ')
+
+        else:
+            # Imprime o fps, a posição x e y, a rotação na borda superior da janela e quantidade
+            # de inimigos restante
+            fps = int(clock.get_fps())
+            pg.display.set_caption(" FPS: " + str(fps) +
+                                   " X: " + str(int(posx)) +
+                                   " Y: " + str(int(posy)) +
+                                   " Rotação: " + str(int(rot)) +
+                                   "   Inimigos: " + str(int(enemy_num)))
+        # Checa eventos
+        for event in pg.event.get():
+            # Encerra o jogo se Esc for presionado
             if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
 
                 running = False
@@ -61,11 +79,7 @@ def main():
 
                 sword_spr = 1
 
-            # Se o player encontrar a saída encerra o jogo
-            if int(posx) == exitx and int(posy) == exity:
 
-                print("Você encontrou a saída! Parabéns!!")
-                running = False
 
 
         # Cria o frame
@@ -84,15 +98,6 @@ def main():
                                 hres, halfvres, ticks, sword, sword_spr)
 
         surf = pg.transform.scale(surf, RES)
-
-        # Imprime o fps, a posição x e y, a rotação na borda superior da janela e quantidade
-        # de inimigos restante
-        fps = int(clock.get_fps())
-        pg.display.set_caption(" FPS: " + str(fps) +
-                               " X: " + str(int(posx)) +
-                               " Y: " + str(int(posy)) +
-                               " Rotação: " + str(int(rot)) +
-                               "   Inimigos: " + str(int(enemy_num)))
 
         # Retorna a espada para posição inicial
         if int(sword_spr) > 0:
