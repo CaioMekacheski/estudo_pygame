@@ -1,4 +1,4 @@
-# Atualizado 30/12/2022 - 02:55
+# Atualizado 5/01/2023 - 03:07
 
 import pygame as pg
 from numba import njit
@@ -38,7 +38,7 @@ def main():
     wall = pg.surfarray.array3d(pg.image.load('wall01.jpg')) / escala_cor
 
     # Carrega e a sprite do inimigo e define o tamanho da sprite
-    sprites, sprsize, sword, sword_spr = get_sprites(hres)
+    sprites, sprsize, sword, sword_spr, pistol, pistol_spr = get_sprites(hres)
 
     # Gera os inimigos no mapa
     enemy_num = 10
@@ -48,7 +48,7 @@ def main():
 
         ticks = pg.time.get_ticks() / 200
         er = clock.tick() / 25
-        
+
         # Se o player encontrar a saída encerra o jogo
         if int(posx) == exitx and int(posy) == exity and enemy_num <= 1:
 
@@ -56,6 +56,7 @@ def main():
             running = False
 
         elif int(posx) == exitx and int(posy) == exity and enemy_num > 0:
+
             pg.display.set_caption(' Ainda há inimigos! ')
 
         else:
@@ -79,6 +80,13 @@ def main():
 
                 sword_spr = 1
 
+            # Movimenta a pistola
+            if pistol_spr < 1 and event.type == pg.MOUSEBUTTONDOWN:
+
+                for spr in range(0, 3, 1):
+
+                    pistol_spr = spr
+
 
 
 
@@ -95,7 +103,7 @@ def main():
         # Cria e desenha, os inimigos e a espada
         enemies = sort_sprites(posx, posy, rot, enemies, maph, size, er / 5)
         surf, en = draw_sprites(surf, sprites, enemies, sprsize,
-                                hres, halfvres, ticks, sword, sword_spr)
+                                hres, halfvres, ticks, sword, sword_spr, pistol, pistol_spr)
 
         surf = pg.transform.scale(surf, RES)
 
@@ -108,6 +116,9 @@ def main():
                 enemy_num -= 1
 
             sword_spr = (sword_spr + er * 5) % 4
+
+        if int(pistol_spr) > 0:
+            pistol_spr = 0
 
         # Define as cordenadas x e y e a rotação do player
         posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
@@ -382,7 +393,16 @@ def get_sprites(hres):
     swordsheet = pg.image.load('sword1.png').convert_alpha()
     sword = []
 
+    pistolsheet = pg.image.load('pistol01.png').convert_alpha()
+    pistol = []
+
     # Armazena as imagens em suas respectivas listas
+
+    for k in range(4):
+
+        subpistol = pg.Surface.subsurface(pistolsheet, (k * 99.5, 0, 99.5, 138))
+        pistol.append(pg.transform.smoothscale(subpistol, (hres / 2, int(hres * 0.5))))
+
     for i in range(3):
 
         subsword = pg.Surface.subsurface(swordsheet, (i * 800, 0, 800, 600))
@@ -402,16 +422,20 @@ def get_sprites(hres):
     sword.append(sword[1])
     sword_spr = 0
 
-    return sprites, sprsize, sword, sword_spr
+    pistol.append(pistol[1])
+    pistol_spr = 0
+
+    return sprites, sprsize, sword, sword_spr, pistol, pistol_spr
 
 # Configura e desenha as sprites
-def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks, sword, sword_spr):
+def draw_sprites(surf, sprites, enemies, sprsize,
+                 hres, halfvres, ticks, sword, sword_spr, pistol, pistol_spr):
 
     cycle = int(ticks) % 3
 
     for en in range(len(enemies)):
 
-        if enemies[en][3] > 10:
+        if enemies[en][3] > 20:
 
             break
 
@@ -423,10 +447,10 @@ def draw_sprites(surf, sprites, enemies, sprsize, hres, halfvres, ticks, sword, 
         spsurf = pg.transform.scale(sprites[types][cycle][dir2p], scale)
         surf.blit(spsurf, (hor, vert) - scale / 2)
 
-    sword_pos = 0, 0
-    surf.blit(sword[int(sword_spr)], sword_pos)
+    weapon = pistol[int(pistol_spr)]
+    weapon_pos = WIDTH / 10, HEIGHT / 10
 
-
+    surf.blit(weapon, weapon_pos)
 
     return surf, en - 1
 
