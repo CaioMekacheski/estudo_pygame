@@ -1,4 +1,4 @@
-# Atualizado 5/01/2023 - 03:07
+# Atualizado 05/01/2023 - 21:09
 
 import pygame as pg
 from numba import njit
@@ -117,7 +117,13 @@ def main():
 
             sword_spr = (sword_spr + er * 5) % 4
 
+        # Retorna a pistola para posição inicial
         if int(pistol_spr) > 0:
+
+            if enemies[en][3] < 15:
+
+                enemies[en][0] = 0
+                enemy_num -= 1
             pistol_spr = 0
 
         # Define as cordenadas x e y e a rotação do player
