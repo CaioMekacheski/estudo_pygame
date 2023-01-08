@@ -1,4 +1,4 @@
-# Atualizado 05/01/2023 - 21:09
+# Atualizado 08/01/2023 - 04:49
 
 import pygame as pg
 from numba import njit
@@ -11,7 +11,7 @@ def main():
     running = True
     clock = pg.time.Clock()
 
-    pg.mouse.set_visible(False)  # Poteiro do mouse invisível
+    pg.mouse.set_visible(False)  # Ponteiro do mouse invisível
     pg.event.set_grab(1)  # O mouse não sai da janela
 
     hres = HOR_RES  # Resolução horizontal
@@ -41,7 +41,7 @@ def main():
     sprites, sprsize, sword, sword_spr, pistol, pistol_spr = get_sprites(hres)
 
     # Gera os inimigos no mapa
-    enemy_num = 10
+    enemy_num = 20
     enemies = spawn_enemies(enemy_num, maph, size)
 
     while running:  # Enquanto running for true
@@ -63,11 +63,11 @@ def main():
             # Imprime o fps, a posição x e y, a rotação na borda superior da janela e quantidade
             # de inimigos restante
             fps = int(clock.get_fps())
-            pg.display.set_caption(" FPS: " + str(fps) +
+            """pg.display.set_caption(" FPS: " + str(fps) +
                                    " X: " + str(int(posx)) +
                                    " Y: " + str(int(posy)) +
                                    " Rotação: " + str(int(rot)) +
-                                   "   Inimigos: " + str(int(enemy_num)))
+                                   "   Inimigos: " + str(int(enemy_num)))"""
         # Checa eventos
         for event in pg.event.get():
             # Encerra o jogo se Esc for presionado
@@ -110,21 +110,46 @@ def main():
         # Retorna a espada para posição inicial
         if int(sword_spr) > 0:
 
-            if sword_spr == 1 and 1 < enemies[en][3] < 10:
-
-                enemies[en][0] = 0
-                enemy_num -= 1
 
             sword_spr = (sword_spr + er * 5) % 4
 
         # Retorna a pistola para posição inicial
         if int(pistol_spr) > 0:
 
-            if enemies[en][3] < 15:
+            # Se o inimigo estiver na mira, leva o dano do disparo
+            if enemies[en][3] >= 15:
 
-                enemies[en][0] = 0
-                enemy_num -= 1
+                if 0 <= enemies[en][2] <= 0.5 \
+                        or 6.3 <= enemies[en][2] <= 6.25:
+
+                    enemies[en][0] = 0
+                    enemy_num -= 1
+
+            elif enemies[en][3] < 15 and enemies[en][3] >= 3:
+
+                if 0 <= enemies[en][2] <= 0.15 \
+                        or 6.3 <= enemies[en][2] <= 6.15:
+
+                    enemies[en][0] = 0
+                    enemy_num -= 1
+
+            elif enemies[en][3] < 3:
+
+                if 0 <= enemies[en][2] <= 1.5 \
+                        or 6.3 <= enemies[en][2] <= 4.8:
+
+                    enemies[en][0] = 0
+                    enemy_num -= 1
+
             pistol_spr = 0
+        # Dados dos inimigos
+        pg.display.set_caption(' X : ' + str(int(enemies[en][0])) + '/'
+                               ' Y : ' + str(int(enemies[en][1])) + '/'
+                               ' Angulo : ' + str(enemies[en][2]) + '/'
+                               ' Distancia : ' + str(int(enemies[en][3])) + '/'
+                               ' Tipo : ' + str(int(enemies[en][4])) + '/'
+                               ' Tamanho : ' + str(int(enemies[en][5])) + '/'
+                               ' Direcao : ' + str(int(enemies[en][6])) + '/')
 
         # Define as cordenadas x e y e a rotação do player
         posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
@@ -329,7 +354,7 @@ def sort_sprites(posx, posy, rot, enemies, maph, size, er):
         # Checa se a sprite está no campo de visão do player
         if abs(posx + np.cos(angle) - enx) > abs(posx - enx):
 
-            angle = (angle - np.pi) % (2 * np.pi)
+            angle = (angle + np.pi) % (2 * np.pi)
 
         angle2 = (rot - angle) % (2 * np.pi)
 
