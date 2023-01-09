@@ -1,4 +1,4 @@
-# Atualizado 08/01/2023 - 21:26
+# Atualizado 08/01/2023 - 22:58
 import numpy as np
 import pygame as pg
 from numba import njit
@@ -128,17 +128,25 @@ def main():
         # Retorna a pistola para posição inicial
         if int(pistol_spr) > 0:
 
-            # Se o inimigo estiver na mira, leva o dano do disparo
+            # Se o inimigo estiver na mira, leva o dano do disparo conforme a distância
+
+            # Distância maior que 20
             if enemies[en][3] >= 20:
+
                 if 0.000001 <= enemies[en][2] <= 0.000002 \
                         or 6.1 <= enemies[en][2] <= 6.000009:
+
+                    # Se health for menor que 1, o inimigo morre
                     if enemies[en][8] < 1:
 
                         enemies[en][0] = 0
 
+                    # Muda a direção, leva o dano e atualiza o contador de inimigos
+                    enemies[en][6] -= 2
                     enemies[en][8] -= 1
                     enemy_num -= 1
 
+            # Distância entre 19 e 5
             elif enemies[en][3] < 20 and enemies[en][3] >= 5:
 
                 if 0.000001 <= enemies[en][2] <= 0.00002 \
@@ -147,9 +155,11 @@ def main():
                     if enemies[en][8] < 1:
                         enemies[en][0] = 0
 
+                    enemies[en][6] -= 2
                     enemies[en][8] -= 1
                     enemy_num -= 1
-
+                    
+            # Distância menor que 5
             elif enemies[en][3] < 5:
 
                 if 0.000001 <= enemies[en][2] <= 0.2 \
@@ -158,22 +168,24 @@ def main():
                     if enemies[en][8] < 1:
                         enemies[en][0] = 0
 
+                    enemies[en][6] -= 2
                     enemies[en][8] -= 1
                     enemy_num -= 1
 
             pistol_spr = 0
 
-        pg.display.set_caption(' Enemy health: ' + str(int(enemies[en][8])))
+        # pg.display.set_caption(' Enemy health: ' + str(int(enemies[en][8])))
 
         # Dados dos inimigos
-        """pg.display.set_caption(' X : ' + str(int(enemies[en][0])) + '/'
+        pg.display.set_caption(' X : ' + str(int(enemies[en][0])) + '/'
                                ' Y : ' + str(int(enemies[en][1])) + '/'
                                ' Angulo : ' + str(enemies[en][2]) + '/'
                                ' Distancia : ' + str(int(enemies[en][3])) + '/'
                                ' Tipo : ' + str(int(enemies[en][4])) + '/'
                                ' Tamanho : ' + str(int(enemies[en][5])) + '/'
-                               ' Direcao : ' + str(int(enemies[en][6])) + '/')
-"""
+                               ' Direcao : ' + str(int(enemies[en][6])) + '/'
+                               ' Direcao2p : ' + str(int(enemies[en][7])) + '/')
+
         # Define as cordenadas x e y e a rotação do player
         posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
         screen.blit(surf, (0, 0))
@@ -437,8 +449,9 @@ def spawn_enemies(number, maph, msize):
         health = size / 2
         state = 0  # 0: normal / 1: agressivo / 2: defensivo
         cool_down = 0
-        enemies.append([x, y, angle2p, invdist2p, entype, size, direction, dir2p, health, state, cool_down])
-
+        enemies.append\
+            ([x, y, angle2p, invdist2p, entype, size, direction, dir2p, health, state, cool_down])
+            # 0  1  2        3          4       5     6          7      8       9      10
     return np.asarray(enemies)
 
 #Carrega as sprites e a organiza em uma lista
@@ -518,9 +531,9 @@ def enemies_ai(posx, posy, enemies, maph, size, mape, pistol_spr, ticks, player_
 
     for en in range(len(enemies)):
 
-        if enemies[en][8] > 0:
+        if enemies[en][8] > 0 and enemies[en][3] < 5:
 
-            x, y = int(enemies[en][0]), int(enemies[en][1])
+            x, y = int(enemies[en][0]) - 10, int(enemies[en][1]) - 10
             mape[x - 1:x + 2, y - 1:y + 2] = mape[x - 1:x + 2, y - 1:y + 2] + 1
 
         return enemies, player_health
