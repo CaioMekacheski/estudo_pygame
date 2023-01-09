@@ -1,5 +1,5 @@
-# Atualizado 08/01/2023 - 04:49
-
+# Atualizado 08/01/2023 - 21:26
+import numpy as np
 import pygame as pg
 from numba import njit
 from settings import *
@@ -44,10 +44,16 @@ def main():
     enemy_num = 20
     enemies = spawn_enemies(enemy_num, maph, size)
 
+    player_health = 10
+
     while running:  # Enquanto running for true
 
         ticks = pg.time.get_ticks() / 200
         er = clock.tick() / 25
+
+        if player_health < 1:
+            print(' Você Morreu!')
+            running = False
 
         # Se o player encontrar a saída encerra o jogo
         if int(posx) == exitx and int(posy) == exity and enemy_num <= 1:
@@ -68,6 +74,7 @@ def main():
                                    " Y: " + str(int(posy)) +
                                    " Rotação: " + str(int(rot)) +
                                    "   Inimigos: " + str(int(enemy_num)))"""
+
         # Checa eventos
         for event in pg.event.get():
             # Encerra o jogo se Esc for presionado
@@ -97,6 +104,11 @@ def main():
                           maph, mapc, size,
                           wall, exitx, exity)
 
+        mape = np.zeros([size, size])
+
+        enemies, player_health = enemies_ai(posx, posy, enemies, maph, size, mape, pistol_spr,
+                                            ticks, player_health)
+
         # Cria uma superfície para receber o frame e o adapta conforme a altura e largura da tela
         surf = pg.surfarray.make_surface(frame * escala_cor)
 
@@ -117,44 +129,56 @@ def main():
         if int(pistol_spr) > 0:
 
             # Se o inimigo estiver na mira, leva o dano do disparo
-            if enemies[en][3] >= 15:
+            if enemies[en][3] >= 20:
+                if 0.000001 <= enemies[en][2] <= 0.000002 \
+                        or 6.1 <= enemies[en][2] <= 6.000009:
+                    if enemies[en][8] < 1:
 
-                if 0 <= enemies[en][2] <= 0.5 \
-                        or 6.3 <= enemies[en][2] <= 6.25:
+                        enemies[en][0] = 0
 
-                    enemies[en][0] = 0
+                    enemies[en][8] -= 1
                     enemy_num -= 1
 
-            elif enemies[en][3] < 15 and enemies[en][3] >= 3:
+            elif enemies[en][3] < 20 and enemies[en][3] >= 5:
 
-                if 0 <= enemies[en][2] <= 0.15 \
-                        or 6.3 <= enemies[en][2] <= 6.15:
+                if 0.000001 <= enemies[en][2] <= 0.00002 \
+                        or 6.1 <= enemies[en][2] <= 6.00009:
 
-                    enemies[en][0] = 0
+                    if enemies[en][8] < 1:
+                        enemies[en][0] = 0
+
+                    enemies[en][8] -= 1
                     enemy_num -= 1
 
-            elif enemies[en][3] < 3:
+            elif enemies[en][3] < 5:
 
-                if 0 <= enemies[en][2] <= 1.5 \
-                        or 6.3 <= enemies[en][2] <= 4.8:
+                if 0.000001 <= enemies[en][2] <= 0.2 \
+                        or 6.1 <= enemies[en][2] <= 6.9:
 
-                    enemies[en][0] = 0
+                    if enemies[en][8] < 1:
+                        enemies[en][0] = 0
+
+                    enemies[en][8] -= 1
                     enemy_num -= 1
 
             pistol_spr = 0
+
+        pg.display.set_caption(' Enemy health: ' + str(int(enemies[en][8])))
+
         # Dados dos inimigos
-        pg.display.set_caption(' X : ' + str(int(enemies[en][0])) + '/'
+        """pg.display.set_caption(' X : ' + str(int(enemies[en][0])) + '/'
                                ' Y : ' + str(int(enemies[en][1])) + '/'
                                ' Angulo : ' + str(enemies[en][2]) + '/'
                                ' Distancia : ' + str(int(enemies[en][3])) + '/'
                                ' Tipo : ' + str(int(enemies[en][4])) + '/'
                                ' Tamanho : ' + str(int(enemies[en][5])) + '/'
                                ' Direcao : ' + str(int(enemies[en][6])) + '/')
-
+"""
         # Define as cordenadas x e y e a rotação do player
         posx, posy, rot = movement(posx, posy, rot, pg.key.get_pressed(), maph, clock.tick())
         screen.blit(surf, (0, 0))
         pg.display.update()
+
 
 # Movimento do player
 def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
@@ -196,6 +220,7 @@ def movement(posx, posy, rot, keys, maph, et):  # Movimentação do player
         posx = x
 
     return posx, posy, rot
+
 
 # Criação do mapa
 def gen_map(size):
@@ -409,7 +434,10 @@ def spawn_enemies(number, maph, msize):
         entype = np.random.choice([0, 1])
         direction = np.random.uniform(0, 2 * np.pi)
         size = np.random.uniform(7, 10)
-        enemies.append([x, y, angle2p, invdist2p, entype, size, direction, dir2p])
+        health = size / 2
+        state = 0  # 0: normal / 1: agressivo / 2: defensivo
+        cool_down = 0
+        enemies.append([x, y, angle2p, invdist2p, entype, size, direction, dir2p, health, state, cool_down])
 
     return np.asarray(enemies)
 
@@ -485,6 +513,17 @@ def draw_sprites(surf, sprites, enemies, sprsize,
 
     return surf, en - 1
 
+
+def enemies_ai(posx, posy, enemies, maph, size, mape, pistol_spr, ticks, player_health):
+
+    for en in range(len(enemies)):
+
+        if enemies[en][8] > 0:
+
+            x, y = int(enemies[en][0]), int(enemies[en][1])
+            mape[x - 1:x + 2, y - 1:y + 2] = mape[x - 1:x + 2, y - 1:y + 2] + 1
+
+        return enemies, player_health
 
 if __name__ == '__main__':
     main()
