@@ -1,4 +1,4 @@
-# Atualizado 08/01/2023 - 22:58
+# Atualizado 10/01/2023 - 00:25
 import numpy as np
 import pygame as pg
 from numba import njit
@@ -133,8 +133,8 @@ def main():
             # Distância maior que 20
             if enemies[en][3] >= 20:
 
-                if 0.000001 <= enemies[en][2] <= 0.000002 \
-                        or 6.1 <= enemies[en][2] <= 6.000009:
+                if 0.00000001 <= enemies[en][2] <= 0.00000002 \
+                        or 6.1 <= enemies[en][2] <= 6.10000009:
 
                     # Se health for menor que 1, o inimigo morre
                     if enemies[en][8] < 1:
@@ -149,8 +149,8 @@ def main():
             # Distância entre 19 e 5
             elif enemies[en][3] < 20 and enemies[en][3] >= 5:
 
-                if 0.000001 <= enemies[en][2] <= 0.00002 \
-                        or 6.1 <= enemies[en][2] <= 6.00009:
+                if 0.00000001 <= enemies[en][2] <= 0.000002 \
+                        or 6.1 <= enemies[en][2] <= 6.100009:
 
                     if enemies[en][8] < 1:
                         enemies[en][0] = 0
@@ -158,12 +158,12 @@ def main():
                     enemies[en][6] -= 2
                     enemies[en][8] -= 1
                     enemy_num -= 1
-                    
+
             # Distância menor que 5
             elif enemies[en][3] < 5:
 
-                if 0.000001 <= enemies[en][2] <= 0.2 \
-                        or 6.1 <= enemies[en][2] <= 6.9:
+                if 0.00000001 <= enemies[en][2] <= 0.002 \
+                        or 6.1 <= enemies[en][2] <= 6.309:
 
                     if enemies[en][8] < 1:
                         enemies[en][0] = 0
@@ -532,6 +532,14 @@ def enemies_ai(posx, posy, enemies, maph, size, mape, pistol_spr, ticks, player_
     for en in range(len(enemies)):
 
         if enemies[en][8] > 0 and enemies[en][3] < 5:
+
+            if enemies[en][3] < 3:
+
+                enemies[en][6] += 2
+
+            else:
+
+                enemies[en][6] = 0
 
             x, y = int(enemies[en][0]) - 10, int(enemies[en][1]) - 10
             mape[x - 1:x + 2, y - 1:y + 2] = mape[x - 1:x + 2, y - 1:y + 2] + 1
